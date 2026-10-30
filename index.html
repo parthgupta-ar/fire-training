@@ -272,7 +272,7 @@ function ftUpdateSpray(pts,dt){
 
 const FT_CLASSES=[
  {k:'A',name:'Ordinary solids',eg:'wood, paper, cloth, coal, plastic',ctl:'Water, foam, or ABC dry powder - cool it',never:'',fire:0xff8c2e,smoke:true,credit:'dead_tree_trunk (CC0 Poly Haven)',
-  build(g){ftPlace(g,'dead_tree_trunk',{h:.1,y:.01,rz:Math.PI/2,ry:.4});ftPlace(g,'dead_tree_trunk',{h:.1,x:.02,y:.09,z:.03,rz:Math.PI/2,ry:-.35});}},
+  build(g){ftPlace(g,'dead_tree_trunk',{h:.34,by:'max',y:.05,rz:Math.PI/2,ry:.4});ftPlace(g,'dead_tree_trunk',{h:.34,by:'max',x:.03,y:.11,z:.04,rz:Math.PI/2,ry:-.35});}},
  {k:'B',name:'Flammable liquids',eg:'oil, diesel, paint, solvents',ctl:'Foam, CO2 or dry powder - smother it',never:'Never a water jet - it spreads the fuel',fire:0xff7b21,credit:'Barrel_01 (CC0 Poly Haven)',
   build(g){ftPlace(g,'Barrel_01',{h:.26});}},
  {k:'C',name:'Flammable gases',eg:'LPG, PNG, acetylene, hydrogen',ctl:'Dry powder; shut the supply first',never:'Never water on a gas jet',fire:0x4fa8ff,credit:'propane_tank (CC0 Poly Haven)',
