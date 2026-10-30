@@ -15,7 +15,7 @@
 </head>
 <body>
 <button id="enter" disabled>checking XR...</button>
-<div id="hud">desktop preview: click = pinch &nbsp;|&nbsp; drag = look around</div>
+<div id="hud">desktop preview: click = pinch &nbsp;|&nbsp; drag = look &nbsp;|&nbsp; WASD = walk</div>
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from './loaders/GLTFLoader.js';
@@ -33,13 +33,13 @@ renderer.setSize(innerWidth,innerHeight);
 renderer.xr.enabled=true;
 document.body.appendChild(renderer.domElement);
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x08111a);
+scene.background=new THREE.Color(0x9fc0dd);
+scene.fog=new THREE.Fog(0x9fc0dd,45,140);
 const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.05,60);
 const rig=new THREE.Group();rig.add(camera);scene.add(rig);
 camera.position.set(0,1.55,.4);camera.lookAt(0,.95,-1.3);
-scene.add(new THREE.HemisphereLight(0xbfe8ff,0x1a2531,.9));
-const dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(1.5,3,1);scene.add(dl);
-const grid=new THREE.GridHelper(12,24,0x14506a,0x0d2733);scene.add(grid);
+scene.add(new THREE.HemisphereLight(0xd8ecff,0x3a4148,1.15));
+const dl=new THREE.DirectionalLight(0xfff2dd,1.35);dl.position.set(30,50,20);scene.add(dl);
 const draco=new DRACOLoader().setDecoderPath('./libs/draco/');
 const loader=new GLTFLoader().setDRACOLoader(draco);
 
@@ -48,21 +48,21 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
 // ---------- XR session ----------
 const enterBtn=document.getElementById('enter');
 if(navigator.xr){
-  navigator.xr.isSessionSupported('immersive-ar').then(ok=>{
-    if(ok){enterBtn.disabled=false;enterBtn.textContent='ENTER AR (Quest)';}
-    else enterBtn.textContent='no immersive-ar - desktop preview';
+  navigator.xr.isSessionSupported('immersive-vr').then(ok=>{
+    if(ok){enterBtn.disabled=false;enterBtn.textContent='ENTER VR (Quest)';}
+    else enterBtn.textContent='no immersive-vr - desktop preview';
   }).catch(()=>{enterBtn.textContent='no XR - desktop preview'});
 }else enterBtn.textContent='no XR - desktop preview';
 enterBtn.onclick=async()=>{
   if(enterBtn.disabled)return;
   try{
-    const s=await navigator.xr.requestSession('immersive-ar',{optionalFeatures:['local-floor','hand-tracking']});
+    const s=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor','hand-tracking']});
     renderer.xr.setReferenceSpaceType('local-floor');
     await renderer.xr.setSession(s);
-  }catch(e){enterBtn.textContent='AR failed: '+e.message}
+  }catch(e){enterBtn.textContent='VR failed: '+e.message}
 };
-renderer.xr.addEventListener('sessionstart',()=>{scene.background=null;grid.visible=false;enterBtn.style.display='none'});
-renderer.xr.addEventListener('sessionend',()=>{scene.background=new THREE.Color(0x08111a);grid.visible=true;enterBtn.style.display='';camera.position.set(0,1.55,.4);camera.lookAt(0,.95,-1.3)});
+renderer.xr.addEventListener('sessionstart',()=>{enterBtn.style.display='none'});
+renderer.xr.addEventListener('sessionend',()=>{enterBtn.style.display='';camera.position.set(0,1.55,.4);camera.lookAt(0,.95,-1.3)});
 
 // ---------- the board (canvas panel) ----------
 const board={hits:[],dirty:true};
@@ -268,6 +268,53 @@ function ftUpdateSpray(pts,dt){
     const v=1.6*f.t[i];
     a[i*3]+=f.dir[i][0]*v*dt*3;a[i*3+1]+=(f.dir[i][1]*v-f.t[i]*1.2)*dt*3;a[i*3+2]+=f.dir[i][2]*v*dt*3;}
   pts.geometry.attributes.position.needsUpdate=!0;
+}
+
+// ---------- virtual environment: power-plant site (real scale, meters) ----------
+function ftCoolingTower(x,z,H){
+  const s=H/18,prof=[[0,7.2],[.25,5.4],[.5,4.4],[.72,4.1],[.85,4.3],[1,5.0]];
+  const pts=prof.map(([t,r])=>new THREE.Vector2(r*s,t*H));
+  const m=new le(new THREE.LatheGeometry(pts,28),new THREE.MeshStandardMaterial({color:0xb9bec4,roughness:.92,side:We}));
+  m.position.set(x,0,z);scene.add(m);
+  const rim=new le(new Ts(5.15*s,5.15*s,.4,28,1,true),new THREE.MeshStandardMaterial({color:0x9aa0a6,roughness:.95,side:We}));
+  rim.position.set(x,H-.2,z);scene.add(rim);
+}
+function ftBuildEnvironment(){
+  const cv=document.createElement('canvas');cv.width=cv.height=256;const c=cv.getContext('2d');
+  c.fillStyle='#7d8187';c.fillRect(0,0,256,256);
+  for(let i=0;i<900;i++){c.fillStyle='rgba(0,0,0,'+(Math.random()*.09)+')';c.fillRect(Math.random()*256,Math.random()*256,2,2)}
+  c.strokeStyle='rgba(0,0,0,.3)';c.lineWidth=2;c.strokeRect(0,0,256,256);
+  const t=new Ss(cv);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(40,40);t.colorSpace=Fe;
+  const gnd=new le(new Kn(240,240),new THREE.MeshStandardMaterial({map:t,roughness:1}));
+  gnd.rotation.x=-Math.PI/2;scene.add(gnd);
+  { // turbine hall - procedural (facade kit renders as bare glass grid, reads badly)
+   const wallM=new THREE.MeshStandardMaterial({color:0x9aa0a3,roughness:.95}),darkM=new THREE.MeshStandardMaterial({color:0x2b3138,roughness:.85}),winM=new THREE.MeshStandardMaterial({color:0x18242e,emissive:0x2c4a5e,emissiveIntensity:.7,roughness:.4});
+   const hall=new Qe();
+   const hb=new le(new Dn(24,10,14),wallM);hb.position.y=5;hall.add(hb);
+   const r1=new le(new Dn(24.8,.2,7.7),darkM);r1.position.set(0,11.05,3.7);r1.rotation.x=.2513;hall.add(r1);
+   const r2=new le(new Dn(24.8,.2,7.7),darkM);r2.position.set(0,11.05,-3.7);r2.rotation.x=-.2513;hall.add(r2);
+   const door=new le(new Dn(5,6.5,.2),darkM);door.position.set(3.5,3.25,7.05);hall.add(door);
+   for(let i=0;i<6;i++){const w=new le(new Dn(2.4,1.6,.12),winM);w.position.set(-9.2+i*3.6,7.6,7.04);hall.add(w)}
+   const vent=new le(new Dn(3,1.2,.14),darkM);vent.position.set(-7,2.2,7.05);hall.add(vent);
+   hall.position.set(-14,0,-22);hall.rotation.y=.15;scene.add(hall);
+   const annex=new Qe();
+   const ab=new le(new Dn(12,6,10),wallM);ab.position.y=3;annex.add(ab);
+   const ar=new le(new Dn(12.6,.2,10.6),darkM);ar.position.y=6.1;annex.add(ar);
+   for(let i=0;i<4;i++){const w=new le(new Dn(1.8,1.3,.12),winM);w.position.set(-3.9+i*2.6,3.6,5.04);annex.add(w)}
+   const ad=new le(new Dn(1.6,2.6,.2),darkM);ad.position.set(3.5,1.3,5.05);annex.add(ad);
+   annex.position.set(13,0,-27);annex.rotation.y=-.35;scene.add(annex);
+  }
+  ftPlace(scene,'modular_industrial_pipes_01',{h:3.5,by:'max',x:6,z:-13,ry:.4});
+  ftPlace(scene,'modular_airduct_circular_01',{h:16,by:'max',rz:Math.PI/2,x:-24,z:-29}); // stack
+  ftPlace(scene,'portable_generator',{h:1.4,x:3.6,z:-6.5});
+  ftPlace(scene,'portable_generator',{h:1.4,x:-4,z:-8,ry:1.2});
+  ftPlace(scene,'fire_hydrant',{h:.75,x:2.2,z:1.4,ry:-.5});
+  ftPlace(scene,'concrete_road_barrier',{h:1,x:-2.6,z:2.6,ry:.2});
+  ftPlace(scene,'concrete_road_barrier',{h:1,x:-1.4,z:2.8,ry:.05});
+  for(let i=0;i<8;i++)ftPlace(scene,'modular_chainlink_fence',{h:2.2,by:'max',x:-21+i*6,z:-34});
+  ftCoolingTower(26,-38,18);
+  scene.add(ftBox(1.7,.62,1.1,0x141d27,0,.31,-1.32));
+  scene.add(ftCyl(.03,.03,1.15,0x1a2531,-1.18,.55,-1.55));
 }
 
 const FT_CLASSES=[
@@ -579,17 +626,49 @@ function ftTickScenario(dt){
 
 // ---------- boot + loop ----------
 ftBuildRoot();
+ftBuildEnvironment();
 board.draw();
+const keys={};addEventListener('keydown',e=>keys[e.code]=true);addEventListener('keyup',e=>keys[e.code]=false);
+let snapCooldown=0;
+function snapTurn(a){
+  const cp=new P();camera.getWorldPosition(cp);const rp=rig.position;
+  const dx=cp.x-rp.x,dz=cp.z-rp.z,cos=Math.cos(a),sin=Math.sin(a);
+  rig.position.x=cp.x-dx*cos+dz*sin;
+  rig.position.z=cp.z-dx*sin-dz*cos;
+  rig.rotation.y+=a;
+}
+function locomotion(dt){
+  let mx=0,mz=0;
+  if(keys.KeyW)mz-=1;if(keys.KeyS)mz+=1;if(keys.KeyA)mx-=1;if(keys.KeyD)mx+=1;
+  if(renderer.xr.isPresenting){
+    const session=renderer.xr.getSession();
+    if(session)for(const src of session.inputSources){
+      const gp=src.gamepad;if(!gp)continue;
+      const ax=gp.axes[2]||0,ay=gp.axes[3]||0;
+      if(src.handedness==='left'){mx+=ax;mz+=ay}
+      else if(src.handedness==='right'&&Math.abs(ax)>.7&&snapCooldown<=0){snapTurn(-Math.sign(ax)*Math.PI/4);snapCooldown=.3}
+    }
+  }
+  snapCooldown-=dt;
+  if(mx||mz){
+    const q=camera.getWorldQuaternion(new THREE.Quaternion());
+    const fwd=new P(0,0,-1).applyQuaternion(q);fwd.y=0;fwd.normalize();
+    const right=new P(1,0,0).applyQuaternion(q);right.y=0;right.normalize();
+    const sp=2.2*dt;
+    rig.position.addScaledVector(fwd,-mz*sp).addScaledVector(right,mx*sp);
+  }
+}
 const clock=new THREE.Clock();
 renderer.setAnimationLoop(()=>{
   const dt=Math.min(.05,clock.getDelta());
+  locomotion(dt);
   ftTick(dt);
   if(board.dirty){board.dirty=false;board.draw()}
   renderer.render(scene,camera);
 });
 
 // test hooks (harmless in production)
-window.__ftTest={stage:ftShowStage,cls:ftShowClass,select:ftSelectExt,down:ftPickDown,up:ftPickUp,press:(u,v)=>board.press(u,v),pointers};
+window.__ftTest={stage:ftShowStage,cls:ftShowClass,select:ftSelectExt,down:ftPickDown,up:ftPickUp,press:(u,v)=>board.press(u,v),pointers,rig,camera};
 </script>
 </body>
 </html>
