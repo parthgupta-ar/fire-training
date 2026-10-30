@@ -17,3 +17,12 @@ Standalone mixed-reality fire safety awareness demo for Meta Quest 3, built with
 - Extinguisher model: NVIDIA SimReady (CC BY 4.0), Draco-decoded for fast Quest loads.
 - PASS reference: OSHA portable extinguisher eTool.
 - three.js r170 (MIT).
+
+## Model credits
+All from Poly Haven (polyhaven.com), license CC0:
+- dead_tree_trunk (Class A logs) - Barrel_01 (Class B drum) - propane_tank (Class C)
+- rusted_wheel_rim_01 (Class D alloy) - power_box_01 (Class E panel + burning cabinet)
+- brass_pot_01 (Class K) - korean_fire_extinguisher_01 (rack)
+- modular_factory_facade, modular_industrial_pipes_01, modular_airduct_circular_01,
+  overhead_crane, portable_generator, fire_hydrant (power plant set)
+Hero extinguisher: NVIDIA SimReady (CC BY 4.0). All models Draco-compressed, textures 256-512px.
